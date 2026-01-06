@@ -21,4 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "CubeCompose"
 include(":app")
- 
+include(":unityLibrary")
+project(":unityLibrary").projectDir = file("J:/UnityProjects/AndroidLibraries/cube/unityLibrary")

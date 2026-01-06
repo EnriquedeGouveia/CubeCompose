@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.cubecompose"
-        minSdk = 24
+        minSdk = 25
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -42,6 +42,8 @@ android {
 }
 
 dependencies {
+    implementation(project(":unityLibrary"))
+    implementation(files("J:/UnityProjects/AndroidLibraries/cube/unityLibrary/libs/unity-classes.jar"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
