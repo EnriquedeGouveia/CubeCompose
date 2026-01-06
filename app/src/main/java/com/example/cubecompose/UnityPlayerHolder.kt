@@ -2,9 +2,11 @@ package com.example.cubecompose
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import com.unity3d.player.UnityPlayer
 import com.unity3d.player.UnityPlayerForActivityOrService
+import java.util.Locale
 import kotlin.random.Random
 
 /**
@@ -24,42 +26,60 @@ class UnityPlayerHolder private constructor(context: Context) {
     }
 
     /**
-     * Sends a rotation message to Unity.
-     * @param axis The axis to rotate on ("X", "Y", or "Z").
-     * @param amount The degrees to rotate by.
+     * Sets the absolute rotation from touch input, preserving the Z-axis.
      */
-    fun rotate(axis: String, amount: Float) {
-        val message = "$axis,$amount"
-        UnityPlayer.UnitySendMessage("Cube", "Rotate", message)
+    fun setAbsoluteXYRotation(x: Float, y: Float) {
+        // Clamp the vertical rotation to avoid flipping the cube upside down
+        val clampedX = x.coerceIn(-80f, 80f)
+        rotationX.floatValue = clampedX
+        rotationY.floatValue = y
+        // Preserve the current Z rotation
+        val message = String.format(Locale.US, "%.2f,%.2f,%.2f", clampedX, y, rotationZ.floatValue)
+        UnityPlayer.UnitySendMessage("Cube", "SetRotation", message)
+    }
+
+    /**
+     * Rotates the cube by a fixed amount, for use with buttons.
+     */
+    fun incrementalRotate(axis: String, amount: Float) {
+        when (axis) {
+            "X" -> rotationX.floatValue += amount
+            "Y" -> rotationY.floatValue += amount
+            "Z" -> rotationZ.floatValue += amount
+        }
+        val message = String.format(
+            Locale.US,
+            "%.2f,%.2f,%.2f",
+            rotationX.floatValue,
+            rotationY.floatValue,
+            rotationZ.floatValue
+        )
+        UnityPlayer.UnitySendMessage("Cube", "SetRotation", message)
     }
 
     companion object {
-        // The volatile annotation ensures that multiple threads handle the instance variable correctly
         @Volatile
         private var instance: UnityPlayerHolder? = null
 
-        // The state for the UI, kept static for easy access
+        // --- State Properties ---
         val rotationData = mutableStateOf("Rotation: (0, 0, 0)")
+        val rotationX = mutableFloatStateOf(35.264f)
+        val rotationY = mutableFloatStateOf(45f)
+        val rotationZ = mutableFloatStateOf(0f)
 
-        // The factory method that provides the singleton instance
+
         fun getInstance(context: Context): UnityPlayerHolder {
             return instance ?: synchronized(this) {
                 instance ?: UnityPlayerHolder(context).also { instance = it }
             }
         }
 
-        /**
-         * This method is called from Unity.
-         */
         @JvmStatic
         fun updateRotationData(data: String) {
             rotationData.value = "Rotation: ($data)"
             Log.d("enrique", "updateRotationData: data: $data currentRotation: ${rotationData.value} ")
         }
 
-        /**
-         * Destroys the player instance when the app is finishing.
-         */
         fun destroy() {
             instance?.player?.destroy()
             instance = null

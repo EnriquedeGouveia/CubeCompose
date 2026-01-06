@@ -7,7 +7,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,11 +23,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.cubecompose.ui.theme.CubeComposeTheme
-import com.unity3d.player.UnityPlayer
 
 class MainActivity : ComponentActivity() {
 
@@ -35,7 +37,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Get the singleton instance of the Unity Player holder
         unityPlayerHolder = UnityPlayerHolder.getInstance(this)
 
         setContent {
@@ -46,10 +47,10 @@ class MainActivity : ComponentActivity() {
                             .padding(innerPadding)
                             .fillMaxSize()
                     ) {
-                        UnityView(
-                            unityPlayer = unityPlayerHolder.player,
-                            modifier = Modifier.weight(1f)
-                        )
+                        // The interactive Unity View with touch controls in the top half
+                        InteractiveUnityView(modifier = Modifier.weight(1f))
+
+                        // The control panel with buttons in the bottom half
                         AndroidControlPanel(
                             modifier = Modifier
                                 .weight(1f)
@@ -85,10 +86,45 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AndroidControlPanel(modifier: Modifier = Modifier) {
-    // Get the singleton instance to call its methods
+fun InteractiveUnityView(modifier: Modifier = Modifier) {
     val unityPlayerHolder = UnityPlayerHolder.getInstance(LocalContext.current)
-    val rotationAmount = 1f
+
+    Box(modifier = modifier) {
+        AndroidView(
+            factory = {
+                (unityPlayerHolder.player.view.parent as? ViewGroup)?.removeView(unityPlayerHolder.player.view)
+                unityPlayerHolder.player.view
+            },
+            update = { view ->
+                view.requestLayout()
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // The transparent overlay for touch input
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        // Read the current state from the holder, apply the drag, and set it back
+                        // Invert both controls for natural feel
+                        val newRotationX =
+                            UnityPlayerHolder.rotationX.floatValue - dragAmount.y / 2f
+                        val newRotationY =
+                            UnityPlayerHolder.rotationY.floatValue - dragAmount.x / 2f
+                        unityPlayerHolder.setAbsoluteXYRotation(newRotationX, newRotationY)
+                    }
+                }
+        )
+    }
+}
+
+@Composable
+fun AndroidControlPanel(modifier: Modifier = Modifier) {
+    val unityPlayerHolder = UnityPlayerHolder.getInstance(LocalContext.current)
+    val rotationAmount = 5f
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -96,10 +132,9 @@ fun AndroidControlPanel(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Top
     ) {
         Spacer(modifier = Modifier.height(16.dp))
-        Greeting(name = "Android Controls")
+        Text("Android Controls")
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Read the static state for the UI
         Text(text = UnityPlayerHolder.rotationData.value)
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -114,52 +149,29 @@ fun AndroidControlPanel(modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(onClick = { unityPlayerHolder.rotate("X", rotationAmount) }) {
+            Button(onClick = { unityPlayerHolder.incrementalRotate("X", rotationAmount) }) {
                 Text("X-Axis +")
             }
-            Button(onClick = { unityPlayerHolder.rotate("Y", rotationAmount) }) {
+            Button(onClick = { unityPlayerHolder.incrementalRotate("Y", rotationAmount) }) {
                 Text("Y-Axis +")
             }
-            Button(onClick = { unityPlayerHolder.rotate("Z", rotationAmount) }) {
+            Button(onClick = { unityPlayerHolder.incrementalRotate("Z", rotationAmount) }) {
                 Text("Z-Axis +")
             }
-
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(onClick = { unityPlayerHolder.rotate("X", -rotationAmount) }) {
+            Button(onClick = { unityPlayerHolder.incrementalRotate("X", -rotationAmount) }) {
                 Text("X-Axis -")
             }
-            Button(onClick = { unityPlayerHolder.rotate("Y", -rotationAmount) }) {
+            Button(onClick = { unityPlayerHolder.incrementalRotate("Y", -rotationAmount) }) {
                 Text("Y-Axis -")
             }
-            Button(onClick = { unityPlayerHolder.rotate("Z", -rotationAmount) }) {
+            Button(onClick = { unityPlayerHolder.incrementalRotate("Z", -rotationAmount) }) {
                 Text("Z-Axis -")
             }
-
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(text = "Hello $name!", modifier = modifier)
-}
-
-@Composable
-fun UnityView(unityPlayer: UnityPlayer?, modifier: Modifier = Modifier) {
-    unityPlayer?.let {
-        AndroidView(
-            factory = { context ->
-                (it.view.parent as? ViewGroup)?.removeView(it.view)
-                it.view
-            },
-            update = { view ->
-                view.requestLayout()
-            },
-            modifier = modifier
-        )
     }
 }
