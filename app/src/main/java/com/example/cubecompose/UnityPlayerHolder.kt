@@ -2,10 +2,9 @@ package com.example.cubecompose
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import com.unity3d.player.UnityPlayer
 import com.unity3d.player.UnityPlayerForActivityOrService
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.graphics.Color
 import kotlin.random.Random
 
 /**
@@ -24,11 +23,15 @@ class UnityPlayerHolder private constructor(context: Context) {
         UnityPlayer.UnitySendMessage("Cube", "SetColor", hexColor)
     }
 
-    fun rotate(axis: String) {
-        UnityPlayer.UnitySendMessage("Cube", "Rotate", axis)
+    /**
+     * Sends a rotation message to Unity.
+     * @param axis The axis to rotate on ("X", "Y", or "Z").
+     * @param amount The degrees to rotate by.
+     */
+    fun rotate(axis: String, amount: Float) {
+        val message = "$axis,$amount"
+        UnityPlayer.UnitySendMessage("Cube", "Rotate", message)
     }
-
-
 
     companion object {
         // The volatile annotation ensures that multiple threads handle the instance variable correctly

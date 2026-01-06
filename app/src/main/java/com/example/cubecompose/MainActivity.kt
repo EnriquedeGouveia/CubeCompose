@@ -1,10 +1,12 @@
 package com.example.cubecompose
 
+import android.graphics.Color
 import android.os.Bundle
 import android.view.ViewGroup
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -48,7 +50,11 @@ class MainActivity : ComponentActivity() {
                             unityPlayer = unityPlayerHolder.player,
                             modifier = Modifier.weight(1f)
                         )
-                        AndroidControlPanel(modifier = Modifier.weight(1f))
+                        AndroidControlPanel(
+                            modifier = Modifier
+                                .weight(1f)
+                                .background(color = androidx.compose.ui.graphics.Color(Color.BLACK))
+                        )
                     }
                 }
             }
@@ -82,12 +88,14 @@ class MainActivity : ComponentActivity() {
 fun AndroidControlPanel(modifier: Modifier = Modifier) {
     // Get the singleton instance to call its methods
     val unityPlayerHolder = UnityPlayerHolder.getInstance(LocalContext.current)
-    Spacer(modifier = Modifier.height(16.dp))
+    val rotationAmount = 1f
+
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
+        Spacer(modifier = Modifier.height(16.dp))
         Greeting(name = "Android Controls")
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -100,19 +108,19 @@ fun AndroidControlPanel(modifier: Modifier = Modifier) {
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Rotate Cube by 45 degrees")
+        Text("Rotate Cube by $rotationAmount degrees")
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(onClick = { unityPlayerHolder.rotate("X") }) {
+            Button(onClick = { unityPlayerHolder.rotate("X", rotationAmount) }) {
                 Text("X-Axis +")
             }
-            Button(onClick = { unityPlayerHolder.rotate("Y") }) {
+            Button(onClick = { unityPlayerHolder.rotate("Y", rotationAmount) }) {
                 Text("Y-Axis +")
             }
-            Button(onClick = { unityPlayerHolder.rotate("Z") }) {
+            Button(onClick = { unityPlayerHolder.rotate("Z", rotationAmount) }) {
                 Text("Z-Axis +")
             }
 
@@ -121,13 +129,13 @@ fun AndroidControlPanel(modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(onClick = { unityPlayerHolder.rotate("X") }) {
+            Button(onClick = { unityPlayerHolder.rotate("X", -rotationAmount) }) {
                 Text("X-Axis -")
             }
-            Button(onClick = { unityPlayerHolder.rotate("Y") }) {
+            Button(onClick = { unityPlayerHolder.rotate("Y", -rotationAmount) }) {
                 Text("Y-Axis -")
             }
-            Button(onClick = { unityPlayerHolder.rotate("Z") }) {
+            Button(onClick = { unityPlayerHolder.rotate("Z", -rotationAmount) }) {
                 Text("Z-Axis -")
             }
 
@@ -147,6 +155,9 @@ fun UnityView(unityPlayer: UnityPlayer?, modifier: Modifier = Modifier) {
             factory = { context ->
                 (it.view.parent as? ViewGroup)?.removeView(it.view)
                 it.view
+            },
+            update = { view ->
+                view.requestLayout()
             },
             modifier = modifier
         )
