@@ -17,12 +17,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -37,6 +46,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Get the singleton instance of the Unity Player holder
         unityPlayerHolder = UnityPlayerHolder.getInstance(this)
 
         setContent {
@@ -108,7 +118,6 @@ fun InteractiveUnityView(modifier: Modifier = Modifier) {
                 .pointerInput(Unit) {
                     detectDragGestures { change, dragAmount ->
                         change.consume()
-                        // Read the current state from the holder, apply the drag, and set it back
                         // Invert both controls for natural feel
                         val newRotationX =
                             UnityPlayerHolder.rotationX.floatValue - dragAmount.y / 2f
@@ -121,10 +130,25 @@ fun InteractiveUnityView(modifier: Modifier = Modifier) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AndroidControlPanel(modifier: Modifier = Modifier) {
     val unityPlayerHolder = UnityPlayerHolder.getInstance(LocalContext.current)
     val rotationAmount = 5f
+    var sliderPosition by remember { mutableFloatStateOf(0f) }
+
+    val rainbowColors = remember {
+        listOf(
+            androidx.compose.ui.graphics.Color.Red,
+            androidx.compose.ui.graphics.Color(0xFF, 0xA5, 0x00), // Orange
+            androidx.compose.ui.graphics.Color.Yellow,
+            androidx.compose.ui.graphics.Color.Green,
+            androidx.compose.ui.graphics.Color.Blue,
+            androidx.compose.ui.graphics.Color(0x4B, 0x00, 0x82), // Indigo
+            androidx.compose.ui.graphics.Color(0xEE, 0x82, 0xEE), // Violet
+            androidx.compose.ui.graphics.Color.Red // Loop back to red
+        )
+    }
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -138,9 +162,28 @@ fun AndroidControlPanel(modifier: Modifier = Modifier) {
         Text(text = UnityPlayerHolder.rotationData.value)
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = { unityPlayerHolder.changeColor() }) {
-            Text("Change to Random Color")
-        }
+        // Color Slider
+        Text("Color")
+        Slider(
+            value = sliderPosition,
+            onValueChange = {
+                sliderPosition = it
+                unityPlayerHolder.setColorFromHue(it)
+            },
+            modifier = Modifier.padding(horizontal = 24.dp),
+            track = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .background(
+                            Brush.horizontalGradient(rainbowColors),
+                            RoundedCornerShape(4.dp)
+                        )
+                        .clip(RoundedCornerShape(4.dp))
+                )
+            }
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
         Text("Rotate Cube by $rotationAmount degrees")

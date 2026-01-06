@@ -7,7 +7,6 @@ import androidx.compose.runtime.mutableStateOf
 import com.unity3d.player.UnityPlayer
 import com.unity3d.player.UnityPlayerForActivityOrService
 import java.util.Locale
-import kotlin.random.Random
 
 /**
  * A singleton class to manage the UnityPlayer instance, using a static factory method.
@@ -17,17 +16,16 @@ class UnityPlayerHolder private constructor(context: Context) {
     val player: UnityPlayer = UnityPlayerForActivityOrService(context.applicationContext)
 
     // --- Instance methods to control the player ---
-    fun changeColor() {
-        val red = Random.nextInt(256)
-        val green = Random.nextInt(256)
-        val blue = Random.nextInt(256)
-        val hexColor = String.format("#%02X%02X%02X", red, green, blue)
+    fun setColorFromHue(hue: Float) {
+        // Android's Color.hsvToColor takes an array. The hue value is 0-360.
+        val hsv = floatArrayOf(hue * 360f, 1f, 1f)
+        val colorInt = android.graphics.Color.HSVToColor(hsv)
+
+        // Format as a hex string for Unity, ensuring alpha is fully opaque
+        val hexColor = String.format("#%06X", 0xFFFFFF and colorInt)
         UnityPlayer.UnitySendMessage("Cube", "SetColor", hexColor)
     }
 
-    /**
-     * Sets the absolute rotation from touch input, preserving the Z-axis.
-     */
     fun setAbsoluteXYRotation(x: Float, y: Float) {
         // Clamp the vertical rotation to avoid flipping the cube upside down
         val clampedX = x.coerceIn(-80f, 80f)
@@ -38,9 +36,6 @@ class UnityPlayerHolder private constructor(context: Context) {
         UnityPlayer.UnitySendMessage("Cube", "SetRotation", message)
     }
 
-    /**
-     * Rotates the cube by a fixed amount, for use with buttons.
-     */
     fun incrementalRotate(axis: String, amount: Float) {
         when (axis) {
             "X" -> rotationX.floatValue += amount
